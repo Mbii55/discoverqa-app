@@ -1,0 +1,25 @@
+// config.js – Supabase setup for Expo (new clean app)
+
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { createClient } from '@supabase/supabase-js';
+
+// const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL;
+// const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY;
+
+// TEMP: if env is not set yet, you can hardcode here to unblock development,
+// but we’ll move to env vars properly later.
+const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL;
+const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY;
+
+if (!supabaseUrl || !supabaseAnonKey) {
+  console.warn('Supabase URL or anon key is missing. Check EXPO_PUBLIC_* env vars.');
+}
+
+export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+  auth: {
+    storage: AsyncStorage,
+    autoRefreshToken: true,
+    persistSession: true,
+    detectSessionInUrl: false,
+  },
+});
