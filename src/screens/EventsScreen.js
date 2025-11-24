@@ -13,7 +13,8 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { getQatarEvents, fetchByUrl } from "../api/predicthq";
 
-const { width: screenWidth } = Dimensions.get("window");
+const { width: SCREEN_WIDTH } = Dimensions.get("window");
+const isTablet = SCREEN_WIDTH >= 600;
 
 function formatDateTime(dateTimeString) {
   if (!dateTimeString) return "";
@@ -232,7 +233,7 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     color: "#4A5568",
-    fontSize: 15,
+    fontSize: isTablet ? 16 : 15,
     fontWeight: "500",
   },
 
@@ -242,75 +243,84 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
     backgroundColor: "#FFFFFF",
-    paddingHorizontal: 20,
-    paddingTop: 20,
-    paddingBottom: 20,
+    paddingHorizontal: isTablet ? 32 : 20,
+    paddingTop: isTablet ? 24 : 20,
+    paddingBottom: isTablet ? 24 : 20,
     borderBottomWidth: 1,
     borderBottomColor: "#E2E8F0",
+    maxWidth: isTablet ? 1200 : '100%',
+    width: '100%',
+    alignSelf: 'center',
   },
   headerTitle: {
-    fontSize: 32,
+    fontSize: isTablet ? 38 : 32,
     fontWeight: "700",
     color: "#2D3748",
     letterSpacing: -0.5,
   },
   countBadge: {
     backgroundColor: "#2D3748",
-    paddingHorizontal: 14,
-    paddingVertical: 8,
+    paddingHorizontal: isTablet ? 18 : 14,
+    paddingVertical: isTablet ? 10 : 8,
     borderRadius: 20,
-    minWidth: 50,
+    minWidth: isTablet ? 60 : 50,
     alignItems: "center",
   },
   countText: {
     color: "#FFFFFF",
-    fontSize: 15,
+    fontSize: isTablet ? 16 : 15,
     fontWeight: "700",
   },
 
   // Error
   errorContainer: {
     backgroundColor: "#FFFFFF",
-    margin: 20,
-    padding: 28,
+    margin: isTablet ? 32 : 20,
+    padding: isTablet ? 36 : 28,
     borderRadius: 16,
     alignItems: "center",
+    maxWidth: isTablet ? 600 : '100%',
+    alignSelf: 'center',
+    width: isTablet ? '90%' : 'auto',
   },
   errorIcon: {
-    fontSize: 48,
+    fontSize: isTablet ? 60 : 48,
     marginBottom: 12,
   },
   errorText: {
     color: "#E53E3E",
-    fontSize: 15,
+    fontSize: isTablet ? 16 : 15,
     fontWeight: "500",
     textAlign: "center",
     marginBottom: 20,
   },
   retryButton: {
     backgroundColor: "#2D3748",
-    paddingHorizontal: 32,
-    paddingVertical: 12,
+    paddingHorizontal: isTablet ? 40 : 32,
+    paddingVertical: isTablet ? 14 : 12,
     borderRadius: 12,
   },
   retryText: {
     color: "#FFFFFF",
-    fontSize: 14,
+    fontSize: isTablet ? 15 : 14,
     fontWeight: "600",
   },
 
   // List
   listContent: {
-    padding: 20,
+    padding: isTablet ? 32 : 20,
     paddingBottom: 40,
+    maxWidth: isTablet ? 1200 : '100%',
+    width: '100%',
+    alignSelf: 'center',
   },
 
   // Event Card
   card: {
     flexDirection: "row",
     backgroundColor: "#FFFFFF",
-    borderRadius: 16,
-    marginBottom: 16,
+    borderRadius: isTablet ? 20 : 16,
+    marginBottom: isTablet ? 20 : 16,
     overflow: "hidden",
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
@@ -319,31 +329,31 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   cardLeft: {
-    width: 90,
+    width: isTablet ? 120 : 90,
     backgroundColor: "#2D3748",
     alignItems: "center",
     justifyContent: "center",
-    paddingVertical: 20,
+    paddingVertical: isTablet ? 24 : 20,
   },
   dateContainer: {
     alignItems: "center",
   },
   dateMonth: {
-    fontSize: 11,
+    fontSize: isTablet ? 12 : 11,
     fontWeight: "700",
     color: "rgba(255, 255, 255, 0.7)",
     letterSpacing: 1,
-    marginBottom: 4,
+    marginBottom: isTablet ? 6 : 4,
   },
   dateDay: {
-    fontSize: 32,
+    fontSize: isTablet ? 40 : 32,
     fontWeight: "800",
     color: "#FFFFFF",
-    lineHeight: 34,
+    lineHeight: isTablet ? 42 : 34,
     marginBottom: 2,
   },
   dateYear: {
-    fontSize: 11,
+    fontSize: isTablet ? 12 : 11,
     fontWeight: "600",
     color: "rgba(255, 255, 255, 0.6)",
   },
@@ -351,30 +361,30 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   cardContent: {
-    padding: 16,
+    padding: isTablet ? 24 : 16,
     justifyContent: "space-between",
   },
   eventTitle: {
-    fontSize: 17,
+    fontSize: isTablet ? 20 : 17,
     fontWeight: "600",
     color: "#2D3748",
-    lineHeight: 23,
-    marginBottom: 12,
+    lineHeight: isTablet ? 26 : 23,
+    marginBottom: isTablet ? 14 : 12,
   },
   metaRow: {
-    gap: 10,
-    marginBottom: 10,
+    gap: isTablet ? 12 : 10,
+    marginBottom: isTablet ? 12 : 10,
   },
   metaItem: {
     flexDirection: "row",
     alignItems: "center",
   },
   metaIcon: {
-    fontSize: 13,
-    marginRight: 6,
+    fontSize: isTablet ? 15 : 13,
+    marginRight: isTablet ? 8 : 6,
   },
   metaText: {
-    fontSize: 13,
+    fontSize: isTablet ? 15 : 13,
     color: "#718096",
     fontWeight: "500",
     flex: 1,
@@ -382,17 +392,17 @@ const styles = StyleSheet.create({
   categoryContainer: {
     flexDirection: "row",
     alignItems: "center",
-    marginTop: 4,
+    marginTop: isTablet ? 6 : 4,
   },
   categoryDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
+    width: isTablet ? 7 : 6,
+    height: isTablet ? 7 : 6,
+    borderRadius: isTablet ? 3.5 : 3,
     backgroundColor: "#2D3748",
-    marginRight: 8,
+    marginRight: isTablet ? 10 : 8,
   },
   categoryText: {
-    fontSize: 12,
+    fontSize: isTablet ? 13 : 12,
     fontWeight: "600",
     color: "#4A5568",
     textTransform: "uppercase",
@@ -401,14 +411,14 @@ const styles = StyleSheet.create({
 
   // Load More
   loadMoreContainer: {
-    paddingVertical: 24,
+    paddingVertical: isTablet ? 32 : 24,
     alignItems: "center",
   },
   endContainer: {
     flexDirection: "row",
     alignItems: "center",
-    paddingVertical: 24,
-    gap: 12,
+    paddingVertical: isTablet ? 32 : 24,
+    gap: isTablet ? 16 : 12,
   },
   endLine: {
     flex: 1,
@@ -416,7 +426,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#E2E8F0",
   },
   endText: {
-    fontSize: 12,
+    fontSize: isTablet ? 13 : 12,
     color: "#A0AEC0",
     fontWeight: "500",
   },

@@ -24,10 +24,11 @@ import {
   removePlaceFavorite,
   getPlaceExternalId,
 } from "../lib/favorites";
-import { getPlaceImages } from "../api/serperImages";
+import { getPlacePhotos } from "../api/serpapiPhotos";
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get("window");
 const isAndroid = Platform.OS === 'android';
+const isTablet = SCREEN_WIDTH >= 600;
 
 function cleanQuotedText(text) {
   if (!text) return null;
@@ -35,8 +36,9 @@ function cleanQuotedText(text) {
 }
 
 function getOpeningHours(place) {
-  if (Array.isArray(place.opening_hours)) return place.opening_hours;
+  // SerpAPI uses 'hours' field
   if (Array.isArray(place.hours)) return place.hours;
+  if (Array.isArray(place.opening_hours)) return place.opening_hours;
   if (Array.isArray(place.operating_hours)) return place.operating_hours;
   return null;
 }
@@ -54,18 +56,18 @@ export default function PlaceDetailScreen({ route }) {
   const [viewerVisible, setViewerVisible] = useState(false);
   const [viewerIndex, setViewerIndex] = useState(0);
 
-  // Serper uses direct latitude/longitude instead of nested gps_coordinates
+  // SerpAPI uses gps_coordinates object
   const coords = {
-    latitude: place.latitude || place.gps_coordinates?.latitude,
-    longitude: place.longitude || place.gps_coordinates?.longitude,
+    latitude: place.gps_coordinates?.latitude || place.latitude,
+    longitude: place.gps_coordinates?.longitude || place.longitude,
   };
   const openingHours = getOpeningHours(place);
   const openState = place.open_state;
   const hasCoords = !!coords.latitude && !!coords.longitude;
 
-  // Support both Serper and SerpAPI field names
-  const phone = place.phoneNumber || place.phone;
-  const reviews = place.ratingCount || place.reviews;
+  // SerpAPI field names
+  const phone = place.phone;
+  const reviews = place.reviews;
 
   useEffect(() => {
     let isMounted = true;
@@ -113,18 +115,19 @@ export default function PlaceDetailScreen({ route }) {
     }
   };
 
-  // Load images using Serper Images API
+  // Load photos using SerpAPI Photos API
   useEffect(() => {
     let active = true;
 
     async function loadPhotos() {
-      if (!place.title) {
-        console.log("[PlaceDetail] No place title");
+      if (!place.photos_link) {
+        console.log("[PlaceDetail] No photos_link available");
+        setLoadingPhotos(false);
         return;
       }
 
       setLoadingPhotos(true);
-      const urls = await getPlaceImages(place.title);
+      const urls = await getPlacePhotos(place.photos_link);
       if (active) {
         setPhotos(urls);
         setLoadingPhotos(false);
@@ -135,7 +138,7 @@ export default function PlaceDetailScreen({ route }) {
     return () => {
       active = false;
     };
-  }, [place.title]);
+  }, [place.photos_link]);
 
   const openViewerAt = (index) => {
     if (!photos || photos.length === 0) return;
@@ -190,8 +193,8 @@ export default function PlaceDetailScreen({ route }) {
     </View>
   );
 
-  // Get first photo as hero image
-  const heroImage = photos.length > 0 ? photos[0] : null;
+  // Get first photo as hero image (prioritize fetched photos over low-quality thumbnail)
+  const heroImage = photos.length > 0 ? photos[0] : place.thumbnail;
 
   return (
     <>
@@ -202,7 +205,7 @@ export default function PlaceDetailScreen({ route }) {
           showsVerticalScrollIndicator={false}
         >
           {/* Hero Image */}
-          {loadingPhotos && photos.length === 0 ? (
+          {loadingPhotos && !heroImage ? (
             <View style={styles.noImageContainer}>
               <ActivityIndicator size="large" color="#2D3748" />
               <TouchableOpacity
@@ -505,12 +508,15 @@ const styles = StyleSheet.create({
   },
   content: {
     paddingBottom: 40,
+    maxWidth: isTablet ? 1000 : '100%',
+    width: '100%',
+    alignSelf: 'center',
   },
 
   // Hero Image
   heroImageContainer: {
     width: "100%",
-    height: isAndroid ? 260 : 280,
+    height: isTablet ? 400 : (isAndroid ? 260 : 280),
     position: "relative",
   },
   heroImage: {
@@ -527,19 +533,22 @@ const styles = StyleSheet.create({
   },
   noImageContainer: {
     width: "100%",
-    height: isAndroid ? 260 : 280,
+    height: isTablet ? 400 : (isAndroid ? 260 : 280),
     backgroundColor: "#E2E8F0",
     justifyContent: "center",
     alignItems: "center",
   },
+  noImageIcon: {
+    fontSize: isTablet ? 80 : 60,
+  },
   favoriteButton: {
     position: "absolute",
-    top: 16,
-    right: 16,
-    width: isAndroid ? 46 : 50,
-    height: isAndroid ? 46 : 50,
+    top: isTablet ? 24 : 16,
+    right: isTablet ? 24 : 16,
+    width: isTablet ? 56 : (isAndroid ? 46 : 50),
+    height: isTablet ? 56 : (isAndroid ? 46 : 50),
     backgroundColor: "#FFFFFF",
-    borderRadius: isAndroid ? 23 : 25,
+    borderRadius: isTablet ? 28 : (isAndroid ? 23 : 25),
     alignItems: "center",
     justifyContent: "center",
     shadowColor: "#000",
@@ -554,26 +563,26 @@ const styles = StyleSheet.create({
   // Header
   header: {
     backgroundColor: "#FFFFFF",
-    paddingHorizontal: 20,
-    paddingTop: isAndroid ? 18 : 20,
-    paddingBottom: isAndroid ? 14 : 16,
+    paddingHorizontal: isTablet ? 32 : 20,
+    paddingTop: isTablet ? 24 : (isAndroid ? 18 : 20),
+    paddingBottom: isTablet ? 20 : (isAndroid ? 14 : 16),
   },
   title: {
-    fontSize: isAndroid ? 22 : 26,
+    fontSize: isTablet ? 32 : (isAndroid ? 22 : 26),
     fontWeight: "700",
     color: "#2D3748",
     marginBottom: 10,
-    lineHeight: isAndroid ? 28 : 32,
+    lineHeight: isTablet ? 38 : (isAndroid ? 28 : 32),
   },
   typeBadge: {
     alignSelf: "flex-start",
     backgroundColor: "#F7F8FA",
-    paddingHorizontal: isAndroid ? 10 : 12,
-    paddingVertical: isAndroid ? 5 : 6,
+    paddingHorizontal: isTablet ? 14 : (isAndroid ? 10 : 12),
+    paddingVertical: isTablet ? 8 : (isAndroid ? 5 : 6),
     borderRadius: 10,
   },
   typeBadgeText: {
-    fontSize: isAndroid ? 11 : 12,
+    fontSize: isTablet ? 13 : (isAndroid ? 11 : 12),
     fontWeight: "700",
     color: "#4A5568",
     textTransform: "uppercase",
@@ -584,9 +593,9 @@ const styles = StyleSheet.create({
   ratingCard: {
     flexDirection: "row",
     backgroundColor: "#FFFFFF",
-    marginHorizontal: 20,
+    marginHorizontal: isTablet ? 32 : 20,
     marginTop: 16,
-    padding: isAndroid ? 14 : 16,
+    padding: isTablet ? 24 : (isAndroid ? 14 : 16),
     borderRadius: 12,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 1 },
@@ -599,31 +608,31 @@ const styles = StyleSheet.create({
     alignItems: "center",
     borderRightWidth: 1,
     borderRightColor: "#E2E8F0",
-    paddingRight: isAndroid ? 14 : 16,
+    paddingRight: isTablet ? 24 : (isAndroid ? 14 : 16),
   },
   ratingNumber: {
-    fontSize: isAndroid ? 28 : 32,
+    fontSize: isTablet ? 40 : (isAndroid ? 28 : 32),
     fontWeight: "700",
     color: "#2D3748",
     marginBottom: 4,
   },
   ratingStars: {
-    fontSize: isAndroid ? 13 : 14,
+    fontSize: isTablet ? 16 : (isAndroid ? 13 : 14),
   },
   ratingRight: {
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
-    paddingLeft: isAndroid ? 14 : 16,
+    paddingLeft: isTablet ? 24 : (isAndroid ? 14 : 16),
   },
   reviewCount: {
-    fontSize: isAndroid ? 22 : 24,
+    fontSize: isTablet ? 32 : (isAndroid ? 22 : 24),
     fontWeight: "700",
     color: "#2D3748",
     marginBottom: 4,
   },
   reviewLabel: {
-    fontSize: isAndroid ? 12 : 13,
+    fontSize: isTablet ? 14 : (isAndroid ? 12 : 13),
     color: "#718096",
     fontWeight: "500",
   },
@@ -631,14 +640,17 @@ const styles = StyleSheet.create({
   // Actions
   actionsContainer: {
     flexDirection: "row",
-    paddingHorizontal: 20,
+    paddingHorizontal: isTablet ? 32 : 20,
     marginTop: 16,
-    gap: isAndroid ? 8 : 10,
+    gap: isTablet ? 16 : (isAndroid ? 8 : 10),
+    maxWidth: isTablet ? 600 : '100%',
+    alignSelf: 'center',
+    width: '100%',
   },
   actionButton: {
     flex: 1,
     backgroundColor: "#FFFFFF",
-    paddingVertical: isAndroid ? 12 : 14,
+    paddingVertical: isTablet ? 18 : (isAndroid ? 12 : 14),
     borderRadius: 12,
     alignItems: "center",
     shadowColor: "#000",
@@ -648,7 +660,7 @@ const styles = StyleSheet.create({
     elevation: 1,
   },
   actionLabel: {
-    fontSize: isAndroid ? 11 : 12,
+    fontSize: isTablet ? 13 : (isAndroid ? 11 : 12),
     fontWeight: "600",
     color: "#4A5568",
     marginTop: 4,
@@ -658,11 +670,11 @@ const styles = StyleSheet.create({
   section: {
     backgroundColor: "#FFFFFF",
     marginTop: 16,
-    paddingHorizontal: 20,
-    paddingVertical: isAndroid ? 18 : 20,
+    paddingHorizontal: isTablet ? 32 : 20,
+    paddingVertical: isTablet ? 24 : (isAndroid ? 18 : 20),
   },
   sectionTitle: {
-    fontSize: isAndroid ? 16 : 18,
+    fontSize: isTablet ? 22 : (isAndroid ? 16 : 18),
     fontWeight: "700",
     color: "#2D3748",
     marginBottom: 16,
@@ -670,11 +682,12 @@ const styles = StyleSheet.create({
 
   // Photos
   photosScroll: {
-    gap: 12,
+    gap: isTablet ? 16 : 12,
+    paddingRight: isTablet ? 32 : 0,
   },
   photoItem: {
-    width: isAndroid ? 150 : 160,
-    height: isAndroid ? 110 : 120,
+    width: isTablet ? 240 : (isAndroid ? 150 : 160),
+    height: isTablet ? 180 : (isAndroid ? 110 : 120),
     borderRadius: 12,
     overflow: "hidden",
     shadowColor: "#000",
@@ -694,26 +707,26 @@ const styles = StyleSheet.create({
   },
   photosLoadingText: {
     color: "#718096",
-    fontSize: isAndroid ? 13 : 14,
+    fontSize: isTablet ? 15 : (isAndroid ? 13 : 14),
     fontWeight: "500",
   },
 
   // Detail Row
   detailRow: {
     flexDirection: "row",
-    marginBottom: isAndroid ? 14 : 16,
+    marginBottom: isTablet ? 18 : (isAndroid ? 14 : 16),
     alignItems: "center",
   },
   detailIconContainer: {
-    marginRight: 12,
-    width: 24,
+    marginRight: isTablet ? 16 : 12,
+    width: isTablet ? 28 : 24,
     alignItems: "center",
   },
   detailContent: {
     flex: 1,
   },
   detailLabel: {
-    fontSize: isAndroid ? 11 : 12,
+    fontSize: isTablet ? 13 : (isAndroid ? 11 : 12),
     color: "#718096",
     fontWeight: "600",
     marginBottom: 4,
@@ -721,7 +734,7 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
   },
   detailValue: {
-    fontSize: isAndroid ? 14 : 15,
+    fontSize: isTablet ? 16 : (isAndroid ? 14 : 15),
     color: "#2D3748",
     fontWeight: "500",
   },
@@ -730,48 +743,48 @@ const styles = StyleSheet.create({
   hoursContainer: {
     backgroundColor: "#F7F8FA",
     borderRadius: 12,
-    padding: isAndroid ? 12 : 14,
+    padding: isTablet ? 18 : (isAndroid ? 12 : 14),
   },
   hoursText: {
-    fontSize: isAndroid ? 13 : 14,
+    fontSize: isTablet ? 15 : (isAndroid ? 13 : 14),
     color: "#4A5568",
-    marginBottom: 6,
+    marginBottom: isTablet ? 8 : 6,
     fontWeight: "500",
   },
 
   // Description
   description: {
-    fontSize: isAndroid ? 14 : 15,
+    fontSize: isTablet ? 16 : (isAndroid ? 14 : 15),
     color: "#4A5568",
-    lineHeight: isAndroid ? 22 : 24,
+    lineHeight: isTablet ? 26 : (isAndroid ? 22 : 24),
   },
 
   // Review Card
   reviewCard: {
     backgroundColor: "#F7F8FA",
     borderRadius: 12,
-    padding: isAndroid ? 14 : 16,
+    padding: isTablet ? 20 : (isAndroid ? 14 : 16),
     borderLeftWidth: 4,
     borderLeftColor: "#2D3748",
   },
   reviewQuote: {
-    fontSize: isAndroid ? 28 : 32,
+    fontSize: isTablet ? 36 : (isAndroid ? 28 : 32),
     color: "#2D3748",
     fontWeight: "700",
-    lineHeight: isAndroid ? 28 : 32,
+    lineHeight: isTablet ? 36 : (isAndroid ? 28 : 32),
     marginBottom: 8,
   },
   reviewText: {
-    fontSize: isAndroid ? 14 : 15,
+    fontSize: isTablet ? 16 : (isAndroid ? 14 : 15),
     color: "#4A5568",
-    lineHeight: isAndroid ? 20 : 22,
+    lineHeight: isTablet ? 24 : (isAndroid ? 20 : 22),
     fontStyle: "italic",
   },
 
   // Map
   map: {
     width: "100%",
-    height: isAndroid ? 180 : 200,
+    height: isTablet ? 300 : (isAndroid ? 180 : 200),
     borderRadius: 12,
     overflow: "hidden",
   },
@@ -781,75 +794,65 @@ const styles = StyleSheet.create({
     left: 12,
     right: 12,
     backgroundColor: "rgba(255, 255, 255, 0.95)",
-    paddingVertical: isAndroid ? 8 : 10,
-    paddingHorizontal: isAndroid ? 12 : 14,
+    paddingVertical: isTablet ? 12 : (isAndroid ? 8 : 10),
+    paddingHorizontal: isTablet ? 16 : (isAndroid ? 12 : 14),
     borderRadius: 8,
     alignItems: "center",
   },
   mapOverlayText: {
-    fontSize: isAndroid ? 12 : 13,
+    fontSize: isTablet ? 14 : (isAndroid ? 12 : 13),
     color: "#2D3748",
     fontWeight: "600",
   },
 
   // Image Viewer
- viewerContainer: {
-  flex: 1,
-  backgroundColor: '#000000', // Black background
-},
-viewerHeaderContainer: {
-  position: 'absolute',
-  top: 0,
-  left: 0,
-  right: 0,
-  zIndex: 10,
-  paddingTop: Platform.OS === 'ios' ? 50 : 20, // Safe area for status bar
-  paddingHorizontal: 20,
-  paddingBottom: 16,
-  backgroundColor: 'rgba(0,0,0,0.5)', // Semi-transparent background
-},
-viewerHeader: {
-  flexDirection: 'row',
-  justifyContent: 'space-between',
-  alignItems: 'center',
-},
-viewerCounter: {
-  fontSize: 16,
-  fontWeight: '600',
-  color: '#FFFFFF',
-},
-viewerCloseButton: {
-  width: 44,
-  height: 44,
-  borderRadius: 22,
-  backgroundColor: 'rgba(255,255,255,0.3)',
-  justifyContent: 'center',
-  alignItems: 'center',
-},
-viewerClose: {
-  fontSize: 24,
-  color: '#FFFFFF',
-  fontWeight: '300',
-},
-viewerImageWrapper: {
-  width: SCREEN_WIDTH,
-  height: SCREEN_HEIGHT,
-  justifyContent: 'center',
-  alignItems: 'center',
-  backgroundColor: '#000000', // Black background for each image
-},
-viewerImage: {
-  width: SCREEN_WIDTH,
-  height: SCREEN_HEIGHT,
-},
+  viewerContainer: {
+    flex: 1,
+    backgroundColor: '#000000',
+  },
+  viewerHeaderContainer: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 10,
+    paddingTop: Platform.OS === 'ios' ? 50 : 20,
+    paddingHorizontal: 20,
+    paddingBottom: 16,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+  },
+  viewerHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  viewerCounter: {
+    fontSize: isTablet ? 18 : 16,
+    fontWeight: '600',
+    color: '#FFFFFF',
+  },
+  viewerCloseButton: {
+    width: isTablet ? 50 : 44,
+    height: isTablet ? 50 : 44,
+    borderRadius: isTablet ? 25 : 22,
+    backgroundColor: 'rgba(255,255,255,0.3)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  viewerClose: {
+    fontSize: isTablet ? 28 : 24,
+    color: '#FFFFFF',
+    fontWeight: '300',
+  },
   viewerImageWrapper: {
     width: SCREEN_WIDTH,
-    height: SCREEN_HEIGHT * 0.8,
-    alignItems: "center",
-    justifyContent: "center",
+    height: SCREEN_HEIGHT,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#000000',
   },
   viewerImage: {
     width: SCREEN_WIDTH,
-    height: SCREEN_HEIGHT * 0.8,
+    height: SCREEN_HEIGHT,
   },
 });

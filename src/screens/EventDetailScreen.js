@@ -23,8 +23,9 @@ import {
 } from "../lib/favorites";
 import { scheduleEventReminder, cancelReminder } from "../lib/notifications";
 
-const { width: screenWidth } = Dimensions.get("window");
+const { width: SCREEN_WIDTH } = Dimensions.get("window");
 const isAndroid = Platform.OS === 'android';
+const isTablet = SCREEN_WIDTH >= 600;
 
 const REMINDER_OPTIONS = [
   { label: '1 hour before', value: 60, unit: 'hour' },
@@ -448,41 +449,44 @@ const styles = StyleSheet.create({
   },
   content: {
     paddingBottom: 40,
+    maxWidth: isTablet ? 1000 : '100%',
+    width: '100%',
+    alignSelf: 'center',
   },
 
   // Hero Section
   hero: {
     backgroundColor: "#FFFFFF",
-    paddingHorizontal: 20,
-    paddingTop: 24,
-    paddingBottom: 24,
+    paddingHorizontal: isTablet ? 32 : 20,
+    paddingTop: isTablet ? 32 : 24,
+    paddingBottom: isTablet ? 32 : 24,
     marginBottom: 16,
   },
   dateCard: {
     alignSelf: "flex-start",
     backgroundColor: "#2D3748",
     borderRadius: 12,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
+    paddingVertical: isTablet ? 16 : 12,
+    paddingHorizontal: isTablet ? 20 : 16,
     alignItems: "center",
     marginBottom: 16,
-    minWidth: 80,
+    minWidth: isTablet ? 100 : 80,
   },
   dateMonth: {
-    fontSize: 11,
+    fontSize: isTablet ? 12 : 11,
     fontWeight: "700",
     color: "rgba(255, 255, 255, 0.7)",
     letterSpacing: 1,
-    marginBottom: 4,
+    marginBottom: isTablet ? 6 : 4,
   },
   dateDay: {
-    fontSize: 32,
+    fontSize: isTablet ? 40 : 32,
     fontWeight: "800",
     color: "#FFFFFF",
-    lineHeight: 34,
+    lineHeight: isTablet ? 42 : 34,
   },
   dateYear: {
-    fontSize: 12,
+    fontSize: isTablet ? 13 : 12,
     fontWeight: "600",
     color: "rgba(255, 255, 255, 0.6)",
     marginTop: 2,
@@ -490,25 +494,25 @@ const styles = StyleSheet.create({
   heroContent: {
     flex: 1,
     marginBottom: 0,
-    paddingRight: 60,
+    paddingRight: isTablet ? 80 : 60,
   },
   title: {
-    fontSize: 26,
+    fontSize: isTablet ? 32 : 26,
     fontWeight: "700",
     color: "#2D3748",
-    lineHeight: 32,
-    marginBottom: 12,
+    lineHeight: isTablet ? 38 : 32,
+    marginBottom: isTablet ? 14 : 12,
   },
   categoryBadge: {
     alignSelf: "flex-start",
     backgroundColor: "#F7F8FA",
-    paddingHorizontal: 12,
-    paddingVertical: 6,
+    paddingHorizontal: isTablet ? 14 : 12,
+    paddingVertical: isTablet ? 8 : 6,
     borderRadius: 10,
     marginBottom: 16,
   },
   categoryText: {
-    fontSize: 12,
+    fontSize: isTablet ? 13 : 12,
     fontWeight: "700",
     color: "#4A5568",
     textTransform: "uppercase",
@@ -516,12 +520,12 @@ const styles = StyleSheet.create({
   },
   favoriteButton: {
     position: "absolute",
-    top: 24,
-    right: 20,
-    width: 50,
-    height: 50,
+    top: isTablet ? 32 : 24,
+    right: isTablet ? 32 : 20,
+    width: isTablet ? 56 : 50,
+    height: isTablet ? 56 : 50,
     backgroundColor: "#FFFFFF",
-    borderRadius: 25,
+    borderRadius: isTablet ? 28 : 25,
     alignItems: "center",
     justifyContent: "center",
     shadowColor: "#000",
@@ -533,20 +537,20 @@ const styles = StyleSheet.create({
     borderColor: "#E2E8F0",
   },
   favoriteIcon: {
-    fontSize: 26,
+    fontSize: isTablet ? 28 : 26,
   },
 
   // Quick Info
   quickInfoContainer: {
-    paddingHorizontal: 20,
+    paddingHorizontal: isTablet ? 32 : 20,
     marginBottom: 16,
-    gap: isAndroid ? 10 : 12,
+    gap: isTablet ? 14 : (isAndroid ? 10 : 12),
   },
   quickInfoCard: {
     flexDirection: "row",
     backgroundColor: "#FFFFFF",
     borderRadius: 12,
-    padding: isAndroid ? 14 : 16,
+    padding: isTablet ? 20 : (isAndroid ? 14 : 16),
     alignItems: "center",
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 1 },
@@ -556,10 +560,10 @@ const styles = StyleSheet.create({
   },
   quickInfoContent: {
     flex: 1,
-    marginLeft: isAndroid ? 12 : 14,
+    marginLeft: isTablet ? 16 : (isAndroid ? 12 : 14),
   },
   quickInfoLabel: {
-    fontSize: isAndroid ? 11 : 12,
+    fontSize: isTablet ? 13 : (isAndroid ? 11 : 12),
     color: "#718096",
     fontWeight: "600",
     marginBottom: 4,
@@ -567,7 +571,7 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
   },
   quickInfoValue: {
-    fontSize: isAndroid ? 14 : 15,
+    fontSize: isTablet ? 16 : (isAndroid ? 14 : 15),
     color: "#2D3748",
     fontWeight: "600",
   },
@@ -575,39 +579,39 @@ const styles = StyleSheet.create({
   // Details Section
   detailsSection: {
     backgroundColor: "#FFFFFF",
-    paddingHorizontal: 20,
-    paddingVertical: 20,
+    paddingHorizontal: isTablet ? 32 : 20,
+    paddingVertical: isTablet ? 24 : 20,
     marginBottom: 16,
   },
   sectionTitle: {
-    fontSize: 18,
+    fontSize: isTablet ? 22 : 18,
     fontWeight: "700",
     color: "#2D3748",
     marginBottom: 16,
   },
   detailsGrid: {
-    gap: 16,
+    gap: isTablet ? 18 : 16,
   },
   detailItem: {
     flexDirection: "row",
     alignItems: "flex-start",
   },
   detailIcon: {
-    fontSize: 20,
-    marginRight: 12,
+    fontSize: isTablet ? 24 : 20,
+    marginRight: isTablet ? 14 : 12,
     marginTop: 2,
   },
   detailContent: {
     flex: 1,
   },
   detailLabel: {
-    fontSize: 13,
+    fontSize: isTablet ? 14 : 13,
     color: "#718096",
     fontWeight: "600",
     marginBottom: 4,
   },
   detailValue: {
-    fontSize: 15,
+    fontSize: isTablet ? 16 : 15,
     color: "#2D3748",
     fontWeight: "500",
   },
@@ -615,25 +619,25 @@ const styles = StyleSheet.create({
   // Labels Section
   labelsSection: {
     backgroundColor: "#FFFFFF",
-    paddingHorizontal: 20,
-    paddingVertical: isAndroid ? 18 : 20,
+    paddingHorizontal: isTablet ? 32 : 20,
+    paddingVertical: isTablet ? 24 : (isAndroid ? 18 : 20),
     marginBottom: 16,
   },
   labelsContainer: {
     flexDirection: "row",
     flexWrap: "wrap",
-    gap: 8,
+    gap: isTablet ? 10 : 8,
   },
   labelChip: {
     backgroundColor: "#F7F8FA",
-    paddingHorizontal: isAndroid ? 12 : 14,
-    paddingVertical: isAndroid ? 7 : 8,
+    paddingHorizontal: isTablet ? 16 : (isAndroid ? 12 : 14),
+    paddingVertical: isTablet ? 10 : (isAndroid ? 7 : 8),
     borderRadius: 20,
     borderWidth: 1,
     borderColor: "#E2E8F0",
   },
   labelChipText: {
-    fontSize: isAndroid ? 12 : 13,
+    fontSize: isTablet ? 14 : (isAndroid ? 12 : 13),
     color: "#4A5568",
     fontWeight: "600",
   },
@@ -641,27 +645,27 @@ const styles = StyleSheet.create({
   // Description Section
   descriptionSection: {
     backgroundColor: "#FFFFFF",
-    paddingHorizontal: 20,
-    paddingVertical: isAndroid ? 18 : 20,
+    paddingHorizontal: isTablet ? 32 : 20,
+    paddingVertical: isTablet ? 24 : (isAndroid ? 18 : 20),
   },
   description: {
-    fontSize: isAndroid ? 14 : 15,
+    fontSize: isTablet ? 16 : (isAndroid ? 14 : 15),
     color: "#4A5568",
-    lineHeight: isAndroid ? 22 : 24,
+    lineHeight: isTablet ? 26 : (isAndroid ? 22 : 24),
   },
 
-  // Remind Me Button - Now in Hero
+  // Remind Me Button
   remindButton: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
     backgroundColor: "#F7F8FA",
-    paddingVertical: isAndroid ? 12 : 12,
-    paddingHorizontal: 20,
+    paddingVertical: isTablet ? 14 : (isAndroid ? 12 : 12),
+    paddingHorizontal: isTablet ? 24 : 20,
     borderRadius: 12,
     borderWidth: 2,
     borderColor: "#2D3748",
-    gap: 8,
+    gap: isTablet ? 10 : 8,
   },
   remindButtonActive: {
     backgroundColor: "#2D3748",
@@ -671,7 +675,7 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
   remindButtonText: {
-    fontSize: isAndroid ? 14 : 15,
+    fontSize: isTablet ? 16 : (isAndroid ? 14 : 15),
     fontWeight: "700",
     color: "#2D3748",
   },
@@ -689,10 +693,13 @@ const styles = StyleSheet.create({
     backgroundColor: "#FFFFFF",
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
-    paddingTop: 20,
-    paddingBottom: 40,
-    paddingHorizontal: 20,
+    paddingTop: isTablet ? 28 : 20,
+    paddingBottom: isTablet ? 48 : 40,
+    paddingHorizontal: isTablet ? 32 : 20,
     maxHeight: "70%",
+    maxWidth: isTablet ? 600 : '100%',
+    alignSelf: 'center',
+    width: '100%',
   },
   modalHeader: {
     flexDirection: "row",
@@ -701,32 +708,32 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   modalTitle: {
-    fontSize: isAndroid ? 20 : 22,
+    fontSize: isTablet ? 26 : (isAndroid ? 20 : 22),
     fontWeight: "700",
     color: "#2D3748",
   },
   modalCloseButton: {
-    padding: 4,
+    padding: isTablet ? 6 : 4,
   },
   modalSubtitle: {
-    fontSize: isAndroid ? 14 : 15,
+    fontSize: isTablet ? 16 : (isAndroid ? 14 : 15),
     color: "#718096",
-    marginBottom: 24,
+    marginBottom: isTablet ? 28 : 24,
   },
   reminderOptions: {
-    gap: 12,
+    gap: isTablet ? 14 : 12,
   },
   reminderOption: {
     flexDirection: "row",
     alignItems: "center",
     backgroundColor: "#F7F8FA",
-    padding: isAndroid ? 16 : 18,
+    padding: isTablet ? 22 : (isAndroid ? 16 : 18),
     borderRadius: 12,
-    gap: 12,
+    gap: isTablet ? 14 : 12,
   },
   reminderOptionText: {
     flex: 1,
-    fontSize: isAndroid ? 15 : 16,
+    fontSize: isTablet ? 18 : (isAndroid ? 15 : 16),
     fontWeight: "600",
     color: "#2D3748",
   },

@@ -15,7 +15,8 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { supabase } from '../../config';
 
-const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
+const { width: SCREEN_WIDTH } = Dimensions.get("window");
+const isTablet = SCREEN_WIDTH >= 600;
 
 const SignUpScreen = ({ navigation }) => {
   const [fullName, setFullName] = useState('');
@@ -216,28 +217,31 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     flexGrow: 1,
-    paddingHorizontal: 20,
-    paddingTop: 40,
+    paddingHorizontal: isTablet ? 32 : 20,
+    paddingTop: isTablet ? 60 : 40,
     paddingBottom: 40,
+    maxWidth: isTablet ? 500 : '100%',
+    width: '100%',
+    alignSelf: 'center',
   },
 
   // Header
   header: {
     alignItems: 'center',
-    marginBottom: 24,
+    marginBottom: isTablet ? 32 : 24,
   },
   title: {
-    fontSize: 28,
+    fontSize: isTablet ? 34 : 28,
     fontWeight: '700',
     color: '#2D3748',
     marginBottom: 8,
   },
   subtitle: {
-    fontSize: 14,
+    fontSize: isTablet ? 16 : 14,
     color: '#718096',
     textAlign: 'center',
-    lineHeight: 20,
-    paddingHorizontal: 20,
+    lineHeight: isTablet ? 22 : 20,
+    paddingHorizontal: isTablet ? 0 : 20,
   },
 
   // Form Error
@@ -246,27 +250,27 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: '#F8D7DA',
     marginBottom: 16,
-    padding: 14,
+    padding: isTablet ? 16 : 14,
     borderRadius: 12,
     borderLeftWidth: 4,
     borderLeftColor: '#DC3545',
   },
   formErrorIcon: {
-    fontSize: 18,
-    marginRight: 10,
+    fontSize: isTablet ? 20 : 18,
+    marginRight: isTablet ? 12 : 10,
   },
   formErrorText: {
     flex: 1,
     color: '#721C24',
-    fontSize: 14,
+    fontSize: isTablet ? 15 : 14,
     fontWeight: '500',
   },
 
   // Form Card
   formCard: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 20,
-    padding: 24,
+    borderRadius: isTablet ? 24 : 20,
+    padding: isTablet ? 32 : 24,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.08,
@@ -276,22 +280,22 @@ const styles = StyleSheet.create({
 
   // Fields
   field: {
-    marginBottom: 20,
+    marginBottom: isTablet ? 24 : 20,
   },
   label: {
-    fontSize: 13,
+    fontSize: isTablet ? 14 : 13,
     fontWeight: '600',
     color: '#4A5568',
-    marginBottom: 8,
+    marginBottom: isTablet ? 10 : 8,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
   input: {
     backgroundColor: '#F7F8FA',
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    fontSize: 15,
+    borderRadius: isTablet ? 14 : 12,
+    paddingHorizontal: isTablet ? 18 : 16,
+    paddingVertical: isTablet ? 16 : 14,
+    fontSize: isTablet ? 16 : 15,
     color: '#2D3748',
     borderWidth: 1,
     borderColor: '#E2E8F0',
@@ -303,35 +307,35 @@ const styles = StyleSheet.create({
   errorContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 6,
+    marginTop: isTablet ? 8 : 6,
   },
   errorIcon: {
-    fontSize: 14,
-    marginRight: 6,
+    fontSize: isTablet ? 16 : 14,
+    marginRight: isTablet ? 8 : 6,
   },
   errorText: {
     color: '#E53E3E',
-    fontSize: 13,
+    fontSize: isTablet ? 14 : 13,
     fontWeight: '500',
   },
   helperText: {
-    fontSize: 12,
+    fontSize: isTablet ? 13 : 12,
     color: '#718096',
-    marginTop: 6,
+    marginTop: isTablet ? 8 : 6,
   },
 
   // Sign Up Button
   signupButton: {
     backgroundColor: '#2D3748',
-    borderRadius: 12,
-    paddingVertical: 16,
+    borderRadius: isTablet ? 14 : 12,
+    paddingVertical: isTablet ? 18 : 16,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 16,
   },
   signupButtonText: {
     color: '#FFFFFF',
-    fontSize: 16,
+    fontSize: isTablet ? 17 : 16,
     fontWeight: '600',
   },
   buttonDisabled: {
@@ -340,10 +344,10 @@ const styles = StyleSheet.create({
 
   // Terms
   termsText: {
-    fontSize: 12,
+    fontSize: isTablet ? 13 : 12,
     color: '#718096',
     textAlign: 'center',
-    lineHeight: 18,
+    lineHeight: isTablet ? 20 : 18,
   },
 
   // Login Prompt
@@ -351,15 +355,15 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: 24,
-    gap: 6,
+    marginTop: isTablet ? 28 : 24,
+    gap: isTablet ? 8 : 6,
   },
   loginPromptText: {
-    fontSize: 14,
+    fontSize: isTablet ? 15 : 14,
     color: '#718096',
   },
   loginLink: {
-    fontSize: 14,
+    fontSize: isTablet ? 15 : 14,
     color: '#2D3748',
     fontWeight: '700',
   },

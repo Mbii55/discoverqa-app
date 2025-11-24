@@ -3,7 +3,8 @@
     "name": "DiscoverQA",
     "slug": "DiscoverQA",
     "version": "1.0.0",
-    "orientation": "portrait",
+    "scheme": "discoverqa",
+    "orientation": "default",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
@@ -32,8 +33,9 @@
     },
     "extra": {
       "eas": {
-        "projectId": "YOUR-EAS-PROJECT-ID"
+        "projectId": "267a005e-3117-4abd-a200-6552350d3a0a"
       }
-    }
+    },
+    "owner": "mohamed5567"
   }
 }

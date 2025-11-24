@@ -1,5 +1,5 @@
 // src/screens/PlacesScreen.js
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback, useMemo } from "react";
 import {
   View,
   Text,
@@ -13,49 +13,18 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useNavigation } from "@react-navigation/native";
-import { getPopularPlaces } from "../api/serperPlaces";
-import { getPlaceImages } from "../api/serperImages";
+import { getPopularPlaces } from "../api/serpapiPlaces";
+import { getPlacePhotos } from "../api/serpapiPhotos";
 
-const { width: screenWidth } = Dimensions.get("window");
+const { width: SCREEN_WIDTH } = Dimensions.get("window");
+const isTablet = SCREEN_WIDTH >= 600;
 
-function PlaceCard({ place, onPress }) {
-  const [thumbnail, setThumbnail] = useState(null);
-  const [loadingImage, setLoadingImage] = useState(true);
-
-  useEffect(() => {
-    let mounted = true;
-
-    async function loadThumbnail() {
-      if (!place.title) {
-        setLoadingImage(false);
-        return;
-      }
-
-      try {
-        const images = await getPlaceImages(place.title);
-        if (mounted && images.length > 0) {
-          setThumbnail(images[0]); // Use first image as thumbnail
-        }
-      } catch (err) {
-        console.log("Error loading thumbnail:", err);
-      } finally {
-        if (mounted) {
-          setLoadingImage(false);
-        }
-      }
-    }
-
-    loadThumbnail();
-
-    return () => {
-      mounted = false;
-    };
-  }, [place.title]);
-
+// Simplified PlaceCard that receives thumbnail as prop
+const PlaceCard = React.memo(({ place, thumbnail, onPress }) => {
   return (
     <TouchableOpacity style={styles.card} onPress={onPress} activeOpacity={0.8}>
       <View style={styles.cardContainer}>
-        {loadingImage ? (
+        {thumbnail === undefined ? (
           <View style={styles.placeholderContainer}>
             <ActivityIndicator size="small" color="#2D3748" />
           </View>
@@ -97,18 +66,18 @@ function PlaceCard({ place, onPress }) {
               </View>
             )}
 
-            {(place.phoneNumber || place.phone) && (
+            {place.phone && (
               <View style={styles.infoRow}>
                 <Text style={styles.infoIcon}>📞</Text>
                 <Text style={styles.infoText} numberOfLines={1}>
-                  {place.phoneNumber || place.phone}
+                  {place.phone}
                 </Text>
               </View>
             )}
 
-            {(place.ratingCount || place.reviews) && (
+            {place.reviews && (
               <Text style={styles.reviewsText}>
-                {place.ratingCount || place.reviews} reviews
+                {place.reviews} reviews
               </Text>
             )}
           </View>
@@ -116,7 +85,7 @@ function PlaceCard({ place, onPress }) {
       </View>
     </TouchableOpacity>
   );
-}
+});
 
 export default function PlacesScreen() {
   const navigation = useNavigation();
@@ -124,6 +93,7 @@ export default function PlacesScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState(null);
+  const [thumbnails, setThumbnails] = useState({});
 
   const loadPlaces = useCallback(async (isRefresh = false) => {
     try {
@@ -134,9 +104,15 @@ export default function PlacesScreen() {
       }
       setError(null);
 
-      // Request all available results (no limit - will get all pages)
-      const data = await getPopularPlaces({ limit: Infinity });
+      // For PlacesScreen, we want all available results (don't pass limit)
+      const data = await getPopularPlaces();
+      console.log(`[PlacesScreen] API returned ${data?.length || 0} places`);
       setPlaces(data || []);
+      
+      // Reset thumbnails when loading new data
+      if (!isRefresh) {
+        setThumbnails({});
+      }
     } catch (err) {
       console.error("loadPlaces error", err);
       setError("Failed to load places");
@@ -146,9 +122,97 @@ export default function PlacesScreen() {
     }
   }, []);
 
+  // Load thumbnails in batches
+  useEffect(() => {
+    if (places.length === 0) return;
+
+    let mounted = true;
+    const batchSize = 10; // Load 10 images at a time
+    let currentBatch = 0;
+
+    async function loadThumbnailsBatch() {
+      while (currentBatch * batchSize < places.length && mounted) {
+        const start = currentBatch * batchSize;
+        const end = Math.min(start + batchSize, places.length);
+        const batch = places.slice(start, end);
+
+        // Load this batch in parallel
+        const batchPromises = batch.map(async (place) => {
+          const placeId = place.place_id || place.data_id || place.cid || place.data_cid;
+          
+          if (!place.photos_link) {
+            return { placeId, thumbnail: null };
+          }
+
+          try {
+            const photos = await getPlacePhotos(place.photos_link);
+            return { placeId, thumbnail: photos[0] || null };
+          } catch (err) {
+            console.log(`Error loading thumbnail for ${place.title}:`, err);
+            return { placeId, thumbnail: null };
+          }
+        });
+
+        const batchResults = await Promise.all(batchPromises);
+        
+        if (mounted) {
+          setThumbnails(prev => {
+            const newThumbnails = { ...prev };
+            batchResults.forEach(({ placeId, thumbnail }) => {
+              if (placeId) {
+                newThumbnails[placeId] = thumbnail;
+              }
+            });
+            return newThumbnails;
+          });
+        }
+
+        currentBatch++;
+        // Small delay between batches to prevent overwhelming the system
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
+    }
+
+    loadThumbnailsBatch();
+
+    return () => {
+      mounted = false;
+    };
+  }, [places]);
+
   useEffect(() => {
     loadPlaces(false);
   }, [loadPlaces]);
+
+  // Memoize renderItem to prevent recreating on every render
+  const renderItem = useCallback(
+    ({ item }) => {
+      const placeId = item.place_id || item.data_id || item.cid || item.data_cid;
+      const thumbnail = thumbnails[placeId];
+      
+      return (
+        <PlaceCard
+          place={item}
+          thumbnail={thumbnail}
+          onPress={() => navigation.navigate("PlaceDetail", { place: item })}
+        />
+      );
+    },
+    [navigation, thumbnails]
+  );
+
+  // Memoize keyExtractor to prevent recreating on every render
+  const keyExtractor = useCallback((item, index) => {
+    // SerpAPI uses different ID fields
+    const stableId =
+      item.place_id ||
+      item.data_id ||
+      item.cid ||
+      item.data_cid;
+
+    // ensure a unique, string key per item
+    return stableId ? `place-${stableId}` : `place-${index}`;
+  }, []);
 
   if (loading && places.length === 0) {
     return (
@@ -184,15 +248,8 @@ export default function PlacesScreen() {
 
       <FlatList
         data={places}
-        keyExtractor={(item) => 
-          item.placeId || item.place_id || item.cid || item.data_id || String(item.position)
-        }
-        renderItem={({ item }) => (
-          <PlaceCard
-            place={item}
-            onPress={() => navigation.navigate("PlaceDetail", { place: item })}
-          />
-        )}
+        keyExtractor={keyExtractor}
+        renderItem={renderItem}
         contentContainerStyle={styles.listContent}
         showsVerticalScrollIndicator={false}
         refreshControl={
@@ -202,7 +259,14 @@ export default function PlacesScreen() {
             tintColor="#2D3748"
           />
         }
+        // Performance optimizations
+        removeClippedSubviews={true}
+        maxToRenderPerBatch={15}
+        updateCellsBatchingPeriod={100}
+        initialNumToRender={15}
+        windowSize={5}
       />
+
     </SafeAreaView>
   );
 }
@@ -224,27 +288,30 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: 16,
     color: "#4A5568",
-    fontSize: 15,
+    fontSize: isTablet ? 16 : 15,
     fontWeight: "500",
   },
 
   // Header
   header: {
     backgroundColor: "#FFFFFF",
-    paddingHorizontal: 20,
-    paddingTop: 16,
-    paddingBottom: 20,
+    paddingHorizontal: isTablet ? 32 : 20,
+    paddingTop: isTablet ? 20 : 16,
+    paddingBottom: isTablet ? 24 : 20,
     borderBottomWidth: 1,
     borderBottomColor: "#E2E8F0",
+    maxWidth: isTablet ? 1200 : '100%',
+    width: '100%',
+    alignSelf: 'center',
   },
   headerTitle: {
-    fontSize: 28,
+    fontSize: isTablet ? 34 : 28,
     fontWeight: "700",
     color: "#2D3748",
     marginBottom: 4,
   },
   headerSubtitle: {
-    fontSize: 14,
+    fontSize: isTablet ? 16 : 14,
     color: "#718096",
     fontWeight: "500",
   },
@@ -252,8 +319,8 @@ const styles = StyleSheet.create({
   // Error
   errorContainer: {
     backgroundColor: "#FFFFFF",
-    margin: 20,
-    padding: 24,
+    margin: isTablet ? 32 : 20,
+    padding: isTablet ? 32 : 24,
     borderRadius: 16,
     alignItems: "center",
     shadowColor: "#000",
@@ -261,39 +328,45 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.06,
     shadowRadius: 8,
     elevation: 2,
+    maxWidth: isTablet ? 600 : '100%',
+    alignSelf: 'center',
+    width: isTablet ? '90%' : 'auto',
   },
   errorIcon: {
-    fontSize: 48,
+    fontSize: isTablet ? 60 : 48,
     marginBottom: 12,
   },
   errorText: {
     color: "#E53E3E",
-    fontSize: 15,
+    fontSize: isTablet ? 16 : 15,
     fontWeight: "500",
     textAlign: "center",
     marginBottom: 16,
   },
   retryButton: {
     backgroundColor: "#2D3748",
-    paddingHorizontal: 24,
-    paddingVertical: 10,
+    paddingHorizontal: isTablet ? 32 : 24,
+    paddingVertical: isTablet ? 12 : 10,
     borderRadius: 12,
   },
   retryText: {
     color: "#FFFFFF",
-    fontSize: 14,
+    fontSize: isTablet ? 15 : 14,
     fontWeight: "600",
   },
 
   // List
   listContent: {
-    padding: 20,
+    padding: isTablet ? 32 : 20,
     paddingBottom: 40,
+    maxWidth: isTablet ? 1200 : '100%',
+    width: '100%',
+    alignSelf: 'center',
   },
 
   // Card
   card: {
-    marginBottom: 16,
+    marginBottom: isTablet ? 24 : 16,
   },
   cardContainer: {
     backgroundColor: "#FFFFFF",
@@ -307,7 +380,7 @@ const styles = StyleSheet.create({
   },
   imageContainer: {
     width: "100%",
-    height: 200,
+    height: isTablet ? 300 : 200,
     position: "relative",
   },
   cardImage: {
@@ -324,11 +397,11 @@ const styles = StyleSheet.create({
   },
   ratingBadge: {
     position: "absolute",
-    top: 12,
-    right: 12,
+    top: isTablet ? 16 : 12,
+    right: isTablet ? 16 : 12,
     backgroundColor: "rgba(255, 255, 255, 0.95)",
-    paddingHorizontal: 12,
-    paddingVertical: 7,
+    paddingHorizontal: isTablet ? 14 : 12,
+    paddingVertical: isTablet ? 8 : 7,
     borderRadius: 12,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
@@ -337,72 +410,72 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   ratingText: {
-    fontSize: 13,
+    fontSize: isTablet ? 14 : 13,
     fontWeight: "700",
     color: "#2D3748",
   },
   placeholderContainer: {
     width: "100%",
-    height: 200,
+    height: isTablet ? 300 : 200,
     backgroundColor: "#F7F8FA",
     justifyContent: "center",
     alignItems: "center",
   },
   placeholderIcon: {
-    fontSize: 64,
+    fontSize: isTablet ? 80 : 64,
     marginBottom: 8,
   },
   placeholderText: {
-    fontSize: 13,
+    fontSize: isTablet ? 14 : 13,
     color: "#A0AEC0",
     fontWeight: "500",
   },
 
   // Card Content
   cardContent: {
-    padding: 16,
+    padding: isTablet ? 24 : 16,
   },
   title: {
-    fontSize: 18,
+    fontSize: isTablet ? 22 : 18,
     fontWeight: "700",
     color: "#2D3748",
-    marginBottom: 8,
-    lineHeight: 24,
+    marginBottom: isTablet ? 10 : 8,
+    lineHeight: isTablet ? 28 : 24,
   },
   typeTag: {
     alignSelf: "flex-start",
     backgroundColor: "#F7F8FA",
-    paddingHorizontal: 12,
-    paddingVertical: 6,
+    paddingHorizontal: isTablet ? 14 : 12,
+    paddingVertical: isTablet ? 8 : 6,
     borderRadius: 10,
-    marginBottom: 12,
+    marginBottom: isTablet ? 14 : 12,
   },
   typeText: {
-    fontSize: 11,
+    fontSize: isTablet ? 12 : 11,
     fontWeight: "700",
     color: "#4A5568",
     textTransform: "uppercase",
     letterSpacing: 0.5,
   },
   infoSection: {
-    gap: 8,
+    gap: isTablet ? 10 : 8,
   },
   infoRow: {
     flexDirection: "row",
     alignItems: "center",
   },
   infoIcon: {
-    fontSize: 14,
-    marginRight: 6,
+    fontSize: isTablet ? 16 : 14,
+    marginRight: isTablet ? 8 : 6,
   },
   infoText: {
-    fontSize: 13,
+    fontSize: isTablet ? 15 : 13,
     color: "#718096",
     fontWeight: "500",
     flex: 1,
   },
   reviewsText: {
-    fontSize: 12,
+    fontSize: isTablet ? 13 : 12,
     color: "#A0AEC0",
     fontWeight: "500",
     marginTop: 4,

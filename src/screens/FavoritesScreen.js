@@ -15,7 +15,8 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { supabase } from "../../config";
 import { useAuth } from "../context/AuthContext";
 
-const { width: screenWidth } = Dimensions.get("window");
+const { width: SCREEN_WIDTH } = Dimensions.get("window");
+const isTablet = SCREEN_WIDTH >= 600;
 
 function FavoriteCard({ item, onPress }) {
   const isEvent = item.item_type === "event";
@@ -270,21 +271,24 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: 16,
     color: "#4A5568",
-    fontSize: 15,
+    fontSize: isTablet ? 16 : 15,
     fontWeight: "500",
   },
 
   // Header
   header: {
     backgroundColor: "#FFFFFF",
-    paddingHorizontal: 20,
-    paddingTop: 16,
-    paddingBottom: 20,
+    paddingHorizontal: isTablet ? 32 : 20,
+    paddingTop: isTablet ? 20 : 16,
+    paddingBottom: isTablet ? 24 : 20,
     borderBottomWidth: 1,
     borderBottomColor: "#E2E8F0",
+    maxWidth: isTablet ? 1200 : '100%',
+    width: '100%',
+    alignSelf: 'center',
   },
   headerTitle: {
-    fontSize: 28,
+    fontSize: isTablet ? 34 : 28,
     fontWeight: "700",
     color: "#2D3748",
     marginBottom: 16,
@@ -293,38 +297,41 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     backgroundColor: "#F7F8FA",
     borderRadius: 12,
-    padding: 16,
+    padding: isTablet ? 20 : 16,
   },
   statItem: {
     flex: 1,
     alignItems: "center",
   },
   statNumber: {
-    fontSize: 24,
+    fontSize: isTablet ? 32 : 24,
     fontWeight: "700",
     color: "#2D3748",
     marginBottom: 4,
   },
   statLabel: {
-    fontSize: 12,
+    fontSize: isTablet ? 13 : 12,
     color: "#718096",
     fontWeight: "500",
   },
   statDivider: {
     width: 1,
     backgroundColor: "#E2E8F0",
-    marginHorizontal: 16,
+    marginHorizontal: isTablet ? 20 : 16,
   },
 
   // Filter
   filterContainer: {
     flexDirection: "row",
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    gap: 10,
+    paddingHorizontal: isTablet ? 32 : 20,
+    paddingVertical: isTablet ? 20 : 16,
+    gap: isTablet ? 14 : 10,
     backgroundColor: "#FFFFFF",
     borderBottomWidth: 1,
     borderBottomColor: "#E2E8F0",
+    maxWidth: isTablet ? 1200 : '100%',
+    width: '100%',
+    alignSelf: 'center',
   },
   filterButton: {
     flex: 1,
@@ -332,16 +339,16 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     backgroundColor: "#F7F8FA",
-    paddingVertical: 10,
-    paddingHorizontal: 12,
+    paddingVertical: isTablet ? 12 : 10,
+    paddingHorizontal: isTablet ? 16 : 12,
     borderRadius: 12,
-    gap: 6,
+    gap: isTablet ? 8 : 6,
   },
   filterButtonActive: {
     backgroundColor: "#2D3748",
   },
   filterLabel: {
-    fontSize: 14,
+    fontSize: isTablet ? 15 : 14,
     fontWeight: "600",
     color: "#4A5568",
   },
@@ -350,17 +357,17 @@ const styles = StyleSheet.create({
   },
   filterCount: {
     backgroundColor: "#E2E8F0",
-    paddingHorizontal: 8,
-    paddingVertical: 2,
+    paddingHorizontal: isTablet ? 10 : 8,
+    paddingVertical: isTablet ? 3 : 2,
     borderRadius: 10,
-    minWidth: 24,
+    minWidth: isTablet ? 28 : 24,
     alignItems: "center",
   },
   filterCountActive: {
     backgroundColor: "rgba(255, 255, 255, 0.2)",
   },
   filterCountText: {
-    fontSize: 12,
+    fontSize: isTablet ? 13 : 12,
     fontWeight: "700",
     color: "#4A5568",
   },
@@ -371,31 +378,34 @@ const styles = StyleSheet.create({
   // Error
   errorContainer: {
     backgroundColor: "#FFFFFF",
-    margin: 20,
-    padding: 28,
+    margin: isTablet ? 32 : 20,
+    padding: isTablet ? 36 : 28,
     borderRadius: 16,
     alignItems: "center",
+    maxWidth: isTablet ? 600 : '100%',
+    alignSelf: 'center',
+    width: isTablet ? '90%' : 'auto',
   },
   errorIcon: {
-    fontSize: 48,
+    fontSize: isTablet ? 60 : 48,
     marginBottom: 12,
   },
   errorText: {
     color: "#E53E3E",
-    fontSize: 15,
+    fontSize: isTablet ? 16 : 15,
     fontWeight: "500",
     textAlign: "center",
     marginBottom: 20,
   },
   retryButton: {
     backgroundColor: "#2D3748",
-    paddingHorizontal: 32,
-    paddingVertical: 12,
+    paddingHorizontal: isTablet ? 40 : 32,
+    paddingVertical: isTablet ? 14 : 12,
     borderRadius: 12,
   },
   retryText: {
     color: "#FFFFFF",
-    fontSize: 14,
+    fontSize: isTablet ? 15 : 14,
     fontWeight: "600",
   },
 
@@ -404,33 +414,39 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
-    paddingHorizontal: 40,
+    paddingHorizontal: isTablet ? 60 : 40,
+  },
+  emptyIcon: {
+    fontSize: isTablet ? 72 : 60,
   },
   emptyTitle: {
-    fontSize: 20,
+    fontSize: isTablet ? 24 : 20,
     fontWeight: "700",
     color: "#2D3748",
     marginBottom: 8,
     marginTop: 16,
   },
   emptyText: {
-    fontSize: 15,
+    fontSize: isTablet ? 16 : 15,
     color: "#718096",
     textAlign: "center",
-    lineHeight: 22,
+    lineHeight: isTablet ? 24 : 22,
   },
 
   // List
   listContent: {
-    padding: 20,
+    padding: isTablet ? 32 : 20,
     paddingBottom: 40,
+    maxWidth: isTablet ? 1200 : '100%',
+    width: '100%',
+    alignSelf: 'center',
   },
 
   // Card
   card: {
     backgroundColor: "#FFFFFF",
-    borderRadius: 16,
-    marginBottom: 12,
+    borderRadius: isTablet ? 18 : 16,
+    marginBottom: isTablet ? 16 : 12,
     overflow: "hidden",
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
@@ -443,7 +459,7 @@ const styles = StyleSheet.create({
     alignItems: "flex-start",
   },
   typeIndicator: {
-    width: 6,
+    width: isTablet ? 8 : 6,
     alignSelf: "stretch",
   },
   typePlace: {
@@ -456,54 +472,54 @@ const styles = StyleSheet.create({
     flex: 1,
     flexDirection: "row",
     alignItems: "flex-start",
-    padding: 14,
-    paddingLeft: 12,
+    padding: isTablet ? 18 : 14,
+    paddingLeft: isTablet ? 16 : 12,
   },
   cardTitle: {
     flex: 1,
-    fontSize: 16,
+    fontSize: isTablet ? 18 : 16,
     fontWeight: "600",
     color: "#2D3748",
-    lineHeight: 22,
+    lineHeight: isTablet ? 24 : 22,
     marginRight: 10,
   },
   typeBadge: {
     backgroundColor: "#F7F8FA",
-    paddingHorizontal: 10,
-    paddingVertical: 5,
+    paddingHorizontal: isTablet ? 12 : 10,
+    paddingVertical: isTablet ? 6 : 5,
     borderRadius: 8,
   },
   typeBadgeText: {
-    fontSize: 11,
+    fontSize: isTablet ? 12 : 11,
     fontWeight: "700",
     color: "#4A5568",
     textTransform: "uppercase",
     letterSpacing: 0.5,
   },
   cardBody: {
-    paddingHorizontal: 14,
-    paddingBottom: 14,
-    paddingLeft: 18,
+    paddingHorizontal: isTablet ? 18 : 14,
+    paddingBottom: isTablet ? 18 : 14,
+    paddingLeft: isTablet ? 24 : 18,
   },
   subtitle: {
-    fontSize: 13,
+    fontSize: isTablet ? 14 : 13,
     color: "#718096",
     fontWeight: "500",
-    marginBottom: 6,
+    marginBottom: isTablet ? 8 : 6,
   },
   addressRow: {
     flexDirection: "row",
     alignItems: "flex-start",
   },
   addressIcon: {
-    fontSize: 13,
-    marginRight: 6,
+    fontSize: isTablet ? 15 : 13,
+    marginRight: isTablet ? 8 : 6,
     marginTop: 2,
   },
   addressText: {
     flex: 1,
-    fontSize: 13,
+    fontSize: isTablet ? 14 : 13,
     color: "#718096",
-    lineHeight: 18,
+    lineHeight: isTablet ? 20 : 18,
   },
 });

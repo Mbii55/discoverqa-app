@@ -16,8 +16,10 @@ import { MaterialIcons, Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../context/AuthContext';
 import Constants from 'expo-constants';
 
-const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
+
+const { width: SCREEN_WIDTH } = Dimensions.get("window");
 const isAndroid = Platform.OS === 'android';
+const isTablet = SCREEN_WIDTH >= 600;
 
 const SettingsScreen = ({ navigation }) => {
   const { user, profile, signOut } = useAuth();
@@ -35,10 +37,34 @@ const SettingsScreen = ({ navigation }) => {
     }
   };
 
-  const handleLogout = async () => {
-    await signOut();
-    navigation.navigate('MainTabs');
-  };
+ const handleLogout = async () => {
+  Alert.alert(
+    'Log Out',
+    'Are you sure you want to log out?',
+    [
+      {
+        text: 'Cancel',
+        style: 'cancel',
+      },
+      {
+        text: 'Log Out',
+        style: 'destructive',
+        onPress: async () => {
+          try {
+            await signOut();
+            // Reset navigation to MainTabs and go to Home
+            navigation.reset({
+              index: 0,
+              routes: [{ name: 'MainTabs' }],
+            });
+          } catch (error) {
+            Alert.alert('Error', 'Failed to log out. Please try again.');
+          }
+        },
+      },
+    ]
+  );
+};
 
   const handleAbout = () => {
     navigation.navigate('AboutDiscoverQA');
@@ -196,7 +222,7 @@ const SettingsScreen = ({ navigation }) => {
         <View style={styles.footer}>
           <Text style={styles.footerText}>DiscoverQA</Text>
           <Text style={styles.footerVersion}>
-            Version {appVersion}{buildNumber ? ` (${buildNumber})` : ''}
+            Version {appVersion}
           </Text>
         </View>
       </ScrollView>
@@ -236,19 +262,22 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingBottom: 40,
+    maxWidth: isTablet ? 800 : '100%',
+    width: '100%',
+    alignSelf: 'center',
   },
 
   // Header
   header: {
     backgroundColor: '#FFFFFF',
-    paddingHorizontal: 20,
-    paddingTop: isAndroid ? 12 : 16,
-    paddingBottom: isAndroid ? 16 : 20,
+    paddingHorizontal: isTablet ? 32 : 20,
+    paddingTop: isTablet ? 20 : (isAndroid ? 12 : 16),
+    paddingBottom: isTablet ? 24 : (isAndroid ? 16 : 20),
     borderBottomWidth: 1,
     borderBottomColor: '#E2E8F0',
   },
   title: {
-    fontSize: isAndroid ? 26 : 32,
+    fontSize: isTablet ? 38 : (isAndroid ? 26 : 32),
     fontWeight: '700',
     color: '#2D3748',
     letterSpacing: isAndroid ? -0.3 : -0.5,
@@ -257,10 +286,10 @@ const styles = StyleSheet.create({
   // Profile Card
   profileCard: {
     backgroundColor: '#FFFFFF',
-    marginHorizontal: 20,
+    marginHorizontal: isTablet ? 32 : 20,
     marginTop: 20,
-    borderRadius: 16,
-    padding: isAndroid ? 16 : 20,
+    borderRadius: isTablet ? 20 : 16,
+    padding: isTablet ? 24 : (isAndroid ? 16 : 20),
     flexDirection: 'row',
     alignItems: 'center',
     shadowColor: '#000',
@@ -270,18 +299,18 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   avatarContainer: {
-    marginRight: isAndroid ? 12 : 16,
+    marginRight: isTablet ? 20 : (isAndroid ? 12 : 16),
   },
   avatar: {
-    width: isAndroid ? 56 : 60,
-    height: isAndroid ? 56 : 60,
-    borderRadius: isAndroid ? 28 : 30,
+    width: isTablet ? 72 : (isAndroid ? 56 : 60),
+    height: isTablet ? 72 : (isAndroid ? 56 : 60),
+    borderRadius: isTablet ? 36 : (isAndroid ? 28 : 30),
     backgroundColor: '#2D3748',
     alignItems: 'center',
     justifyContent: 'center',
   },
   avatarText: {
-    fontSize: isAndroid ? 22 : 24,
+    fontSize: isTablet ? 28 : (isAndroid ? 22 : 24),
     fontWeight: '700',
     color: '#FFFFFF',
   },
@@ -289,13 +318,13 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   profileName: {
-    fontSize: isAndroid ? 16 : 18,
+    fontSize: isTablet ? 20 : (isAndroid ? 16 : 18),
     fontWeight: '700',
     color: '#2D3748',
-    marginBottom: 4,
+    marginBottom: isTablet ? 6 : 4,
   },
   profileEmail: {
-    fontSize: isAndroid ? 13 : 14,
+    fontSize: isTablet ? 15 : (isAndroid ? 13 : 14),
     color: '#718096',
     fontWeight: '500',
   },
@@ -303,10 +332,10 @@ const styles = StyleSheet.create({
   // Login Prompt Card
   loginPromptCard: {
     backgroundColor: '#FFFFFF',
-    marginHorizontal: 20,
+    marginHorizontal: isTablet ? 32 : 20,
     marginTop: 20,
-    borderRadius: 16,
-    padding: isAndroid ? 20 : 24,
+    borderRadius: isTablet ? 20 : 16,
+    padding: isTablet ? 32 : (isAndroid ? 20 : 24),
     alignItems: 'center',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
@@ -315,27 +344,27 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   loginPromptTitle: {
-    fontSize: isAndroid ? 18 : 20,
+    fontSize: isTablet ? 24 : (isAndroid ? 18 : 20),
     fontWeight: '700',
     color: '#2D3748',
-    marginBottom: 8,
+    marginBottom: isTablet ? 10 : 8,
   },
   loginPromptText: {
-    fontSize: isAndroid ? 13 : 14,
+    fontSize: isTablet ? 16 : (isAndroid ? 13 : 14),
     color: '#718096',
     textAlign: 'center',
-    lineHeight: isAndroid ? 18 : 20,
-    marginBottom: isAndroid ? 16 : 20,
+    lineHeight: isTablet ? 22 : (isAndroid ? 18 : 20),
+    marginBottom: isTablet ? 24 : (isAndroid ? 16 : 20),
   },
   loginButton: {
     backgroundColor: '#2D3748',
-    paddingHorizontal: isAndroid ? 20 : 24,
-    paddingVertical: isAndroid ? 10 : 12,
+    paddingHorizontal: isTablet ? 32 : (isAndroid ? 20 : 24),
+    paddingVertical: isTablet ? 14 : (isAndroid ? 10 : 12),
     borderRadius: 12,
   },
   loginButtonText: {
     color: '#FFFFFF',
-    fontSize: isAndroid ? 14 : 15,
+    fontSize: isTablet ? 16 : (isAndroid ? 14 : 15),
     fontWeight: '600',
   },
 
@@ -343,17 +372,17 @@ const styles = StyleSheet.create({
   section: {
     backgroundColor: '#FFFFFF',
     marginTop: 16,
-    paddingVertical: 8,
+    paddingVertical: isTablet ? 10 : 8,
   },
   sectionTitle: {
-    fontSize: isAndroid ? 12 : 13,
+    fontSize: isTablet ? 14 : (isAndroid ? 12 : 13),
     fontWeight: '700',
     color: '#718096',
     textTransform: 'uppercase',
     letterSpacing: 0.5,
-    paddingHorizontal: 20,
-    paddingTop: 12,
-    paddingBottom: 8,
+    paddingHorizontal: isTablet ? 32 : 20,
+    paddingTop: isTablet ? 14 : 12,
+    paddingBottom: isTablet ? 10 : 8,
   },
 
   // Setting Item
@@ -361,8 +390,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: isAndroid ? 14 : 16,
-    paddingHorizontal: 20,
+    paddingVertical: isTablet ? 18 : (isAndroid ? 14 : 16),
+    paddingHorizontal: isTablet ? 32 : 20,
     backgroundColor: '#FFFFFF',
     borderBottomWidth: 1,
     borderBottomColor: '#F7F8FA',
@@ -372,30 +401,36 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     flex: 1,
   },
+  settingIcon: {
+    fontSize: isTablet ? 26 : 24,
+  },
   settingLabel: {
-    fontSize: isAndroid ? 15 : 16,
+    fontSize: isTablet ? 17 : (isAndroid ? 15 : 16),
     fontWeight: '500',
     color: '#2D3748',
-    marginLeft: 14,
+    marginLeft: isTablet ? 16 : 14,
   },
   settingLabelDestructive: {
     color: '#E53E3E',
+  },
+  settingChevron: {
+    fontSize: isTablet ? 24 : 20,
   },
 
   // Footer
   footer: {
     alignItems: 'center',
-    marginTop: 32,
-    paddingHorizontal: 20,
+    marginTop: isTablet ? 40 : 32,
+    paddingHorizontal: isTablet ? 32 : 20,
   },
   footerText: {
-    fontSize: isAndroid ? 13 : 14,
+    fontSize: isTablet ? 16 : (isAndroid ? 13 : 14),
     fontWeight: '600',
     color: '#2D3748',
     marginBottom: 4,
   },
   footerVersion: {
-    fontSize: isAndroid ? 11 : 12,
+    fontSize: isTablet ? 13 : (isAndroid ? 11 : 12),
     color: '#A0AEC0',
     fontWeight: '500',
   },

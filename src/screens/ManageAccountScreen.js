@@ -17,7 +17,8 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useAuth } from "../context/AuthContext";
 import { supabase } from "../../config";
 
-const { width: screenWidth, height: screenHeight } = Dimensions.get("window");
+const { width: SCREEN_WIDTH } = Dimensions.get("window");
+const isTablet = SCREEN_WIDTH >= 600;
 
 const ManageAccountScreen = ({ navigation }) => {
   const { user, signOut } = useAuth();
@@ -107,7 +108,7 @@ const ManageAccountScreen = ({ navigation }) => {
   const handleDeleteAccount = () => {
     Alert.alert(
       "Delete Account",
-      "Are you sure you want to delete your account? This action cannot be undone. All your favorites and data will be permanently deleted.",
+      "Are you sure you want to permanently delete your account? This action cannot be undone.",
       [
         {
           text: "Cancel",
@@ -116,106 +117,54 @@ const ManageAccountScreen = ({ navigation }) => {
         {
           text: "Delete",
           style: "destructive",
-          onPress: confirmDeleteAccount,
-        },
-      ]
-    );
-  };
-
-  const confirmDeleteAccount = () => {
-    Alert.alert(
-      "Final Confirmation",
-      "This is your last chance. Type DELETE to confirm account deletion.",
-      [
-        {
-          text: "Cancel",
-          style: "cancel",
-        },
-        {
-          text: "I'm Sure, Delete",
-          style: "destructive",
           onPress: executeDeleteAccount,
         },
       ]
     );
   };
 
-  const executeDeleteAccount = async () => {
-    setDeleting(true);
-    setStatusMsg("");
-    setErrorMsg("");
+ const executeDeleteAccount = async () => {
+  setDeleting(true);
+  setStatusMsg("");
+  setErrorMsg("");
 
-    try {
-      // First, delete user data from favorites table
-      const { error: favoritesError } = await supabase
-        .from("favorites")
-        .delete()
-        .eq("user_id", user.id);
+  try {
+    // Call the database function that handles everything
+    const { error } = await supabase.rpc('delete_user');
 
-      if (favoritesError) {
-        console.log("Error deleting favorites:", favoritesError);
-      }
-
-      // Delete user profile if you have a profiles table
-      const { error: profileError } = await supabase
-        .from("profiles")
-        .delete()
-        .eq("id", user.id);
-
-      if (profileError) {
-        console.log("Error deleting profile:", profileError);
-      }
-
-      // Finally, delete the auth user
-      const { error: deleteError } = await supabase.auth.admin.deleteUser(
-        user.id
-      );
-
-      if (deleteError) {
-        // If admin delete fails (requires service role), try signOut instead
-        console.log("Admin delete failed, signing out instead:", deleteError);
-        
-        Alert.alert(
-          "Account Deletion Request",
-          "Your account data has been removed. Please contact support@discoverqa.com to complete account deletion, or simply stop using the app.",
-          [
-            {
-              text: "OK",
-              onPress: async () => {
-                await signOut();
-                navigation.reset({
-                  index: 0,
-                  routes: [{ name: "Home" }],
-                });
-              },
-            },
-          ]
-        );
-      } else {
-        Alert.alert(
-          "Account Deleted",
-          "Your account has been permanently deleted.",
-          [
-            {
-              text: "OK",
-              onPress: async () => {
-                await signOut();
-                navigation.reset({
-                  index: 0,
-                  routes: [{ name: "Home" }],
-                });
-              },
-            },
-          ]
-        );
-      }
-    } catch (e) {
-      console.log("Delete account error:", e);
-      setErrorMsg("Failed to delete account. Please contact support.");
-    } finally {
-      setDeleting(false);
+    if (error) {
+      console.log("RPC delete_user error:", error);
+      throw error;
     }
-  };
+
+    // Sign out
+    await signOut();
+
+    // Navigate back
+    navigation.goBack();
+
+    // Show success message
+    setTimeout(() => {
+      Alert.alert(
+        "Account Deleted",
+        "Your account has been permanently deleted.",
+        [{ text: "OK" }]
+      );
+    }, 300);
+
+  } catch (e) {
+    console.log("Delete account error:", e);
+    
+    // Handle specific error messages
+    if (e.message?.includes('permission denied') || e.message?.includes('not found')) {
+      setErrorMsg("Unable to delete account. Please contact support at support@discoverqa.com");
+    } else {
+      setErrorMsg("Failed to delete account. Please try again.");
+    }
+  } finally {
+    setDeleting(false);
+  }
+};
 
   const userName = user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'User';
 
@@ -375,25 +324,28 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingBottom: 40,
+    maxWidth: isTablet ? 700 : '100%',
+    width: '100%',
+    alignSelf: 'center',
   },
 
   // Header
   header: {
     backgroundColor: "#FFFFFF",
-    paddingHorizontal: 20,
-    paddingTop: 16,
-    paddingBottom: 20,
+    paddingHorizontal: isTablet ? 32 : 20,
+    paddingTop: isTablet ? 20 : 16,
+    paddingBottom: isTablet ? 24 : 20,
     borderBottomWidth: 1,
     borderBottomColor: "#E2E8F0",
   },
   title: {
-    fontSize: 28,
+    fontSize: isTablet ? 34 : 28,
     fontWeight: "700",
     color: "#2D3748",
     marginBottom: 4,
   },
   subtitle: {
-    fontSize: 14,
+    fontSize: isTablet ? 16 : 14,
     color: "#718096",
     fontWeight: "500",
   },
@@ -402,25 +354,25 @@ const styles = StyleSheet.create({
   avatarSection: {
     backgroundColor: "#FFFFFF",
     alignItems: "center",
-    paddingVertical: 24,
+    paddingVertical: isTablet ? 32 : 24,
     marginBottom: 16,
   },
   avatarLarge: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
+    width: isTablet ? 100 : 80,
+    height: isTablet ? 100 : 80,
+    borderRadius: isTablet ? 50 : 40,
     backgroundColor: "#2D3748",
     alignItems: "center",
     justifyContent: "center",
-    marginBottom: 12,
+    marginBottom: isTablet ? 16 : 12,
   },
   avatarText: {
-    fontSize: 32,
+    fontSize: isTablet ? 40 : 32,
     fontWeight: "700",
     color: "#FFFFFF",
   },
   currentEmail: {
-    fontSize: 14,
+    fontSize: isTablet ? 16 : 14,
     color: "#718096",
     fontWeight: "500",
   },
@@ -430,52 +382,52 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     backgroundColor: "#D4EDDA",
-    marginHorizontal: 20,
+    marginHorizontal: isTablet ? 32 : 20,
     marginBottom: 16,
-    padding: 14,
+    padding: isTablet ? 18 : 14,
     borderRadius: 12,
     borderLeftWidth: 4,
     borderLeftColor: "#28A745",
   },
   successIcon: {
-    fontSize: 18,
-    marginRight: 10,
+    fontSize: isTablet ? 20 : 18,
+    marginRight: isTablet ? 12 : 10,
   },
   successText: {
     flex: 1,
     color: "#155724",
-    fontSize: 14,
+    fontSize: isTablet ? 15 : 14,
     fontWeight: "500",
   },
   errorMessage: {
     flexDirection: "row",
     alignItems: "center",
     backgroundColor: "#F8D7DA",
-    marginHorizontal: 20,
+    marginHorizontal: isTablet ? 32 : 20,
     marginBottom: 16,
-    padding: 14,
+    padding: isTablet ? 18 : 14,
     borderRadius: 12,
     borderLeftWidth: 4,
     borderLeftColor: "#DC3545",
   },
   errorIcon: {
-    fontSize: 18,
-    marginRight: 10,
+    fontSize: isTablet ? 20 : 18,
+    marginRight: isTablet ? 12 : 10,
   },
   errorText: {
     flex: 1,
     color: "#721C24",
-    fontSize: 14,
+    fontSize: isTablet ? 15 : 14,
     fontWeight: "500",
   },
 
   // Card
   card: {
     backgroundColor: "#FFFFFF",
-    marginHorizontal: 20,
+    marginHorizontal: isTablet ? 32 : 20,
     marginBottom: 16,
-    padding: 20,
-    borderRadius: 16,
+    padding: isTablet ? 28 : 20,
+    borderRadius: isTablet ? 20 : 16,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
@@ -483,16 +435,16 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   cardTitle: {
-    fontSize: 18,
+    fontSize: isTablet ? 22 : 18,
     fontWeight: "700",
     color: "#2D3748",
     marginBottom: 8,
   },
   cardDescription: {
-    fontSize: 14,
+    fontSize: isTablet ? 16 : 14,
     color: "#718096",
     marginBottom: 16,
-    lineHeight: 20,
+    lineHeight: isTablet ? 22 : 20,
   },
 
   // Fields
@@ -500,19 +452,19 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   label: {
-    fontSize: 13,
+    fontSize: isTablet ? 14 : 13,
     fontWeight: "600",
     color: "#4A5568",
-    marginBottom: 8,
+    marginBottom: isTablet ? 10 : 8,
     textTransform: "uppercase",
     letterSpacing: 0.5,
   },
   input: {
     backgroundColor: "#F7F8FA",
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    fontSize: 15,
+    borderRadius: isTablet ? 14 : 12,
+    paddingHorizontal: isTablet ? 18 : 16,
+    paddingVertical: isTablet ? 16 : 14,
+    fontSize: isTablet ? 16 : 15,
     color: "#2D3748",
     borderWidth: 1,
     borderColor: "#E2E8F0",
@@ -522,24 +474,24 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
     backgroundColor: "#F7F8FA",
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
+    borderRadius: isTablet ? 14 : 12,
+    paddingHorizontal: isTablet ? 18 : 16,
+    paddingVertical: isTablet ? 16 : 14,
     borderWidth: 1,
     borderColor: "#E2E8F0",
   },
   inputDisabledText: {
-    fontSize: 15,
+    fontSize: isTablet ? 16 : 15,
     color: "#718096",
   },
   lockedBadge: {
     backgroundColor: "#E2E8F0",
-    paddingHorizontal: 10,
-    paddingVertical: 4,
+    paddingHorizontal: isTablet ? 12 : 10,
+    paddingVertical: isTablet ? 5 : 4,
     borderRadius: 8,
   },
   lockedText: {
-    fontSize: 11,
+    fontSize: isTablet ? 12 : 11,
     color: "#4A5568",
     fontWeight: "600",
   },
@@ -547,35 +499,35 @@ const styles = StyleSheet.create({
   // Buttons
   primaryButton: {
     backgroundColor: "#2D3748",
-    borderRadius: 12,
-    paddingVertical: 14,
+    borderRadius: isTablet ? 14 : 12,
+    paddingVertical: isTablet ? 16 : 14,
     alignItems: "center",
     justifyContent: "center",
     marginTop: 8,
   },
   primaryButtonText: {
     color: "#FFFFFF",
-    fontSize: 15,
+    fontSize: isTablet ? 16 : 15,
     fontWeight: "600",
   },
   secondaryButton: {
     flexDirection: "row",
     backgroundColor: "#F7F8FA",
-    borderRadius: 12,
-    paddingVertical: 14,
-    paddingHorizontal: 16,
+    borderRadius: isTablet ? 14 : 12,
+    paddingVertical: isTablet ? 16 : 14,
+    paddingHorizontal: isTablet ? 18 : 16,
     alignItems: "center",
     justifyContent: "center",
     borderWidth: 1,
     borderColor: "#E2E8F0",
   },
   secondaryButtonIcon: {
-    fontSize: 18,
-    marginRight: 8,
+    fontSize: isTablet ? 20 : 18,
+    marginRight: isTablet ? 10 : 8,
   },
   secondaryButtonText: {
     color: "#2D3748",
-    fontSize: 14,
+    fontSize: isTablet ? 15 : 14,
     fontWeight: "600",
   },
   buttonDisabled: {
@@ -586,22 +538,22 @@ const styles = StyleSheet.create({
   infoCard: {
     flexDirection: "row",
     backgroundColor: "#EBF8FF",
-    marginHorizontal: 20,
-    padding: 16,
+    marginHorizontal: isTablet ? 32 : 20,
+    padding: isTablet ? 20 : 16,
     borderRadius: 12,
     borderWidth: 1,
     borderColor: "#BEE3F8",
   },
   infoIcon: {
-    fontSize: 20,
-    marginRight: 12,
+    fontSize: isTablet ? 22 : 20,
+    marginRight: isTablet ? 14 : 12,
     marginTop: 2,
   },
   infoText: {
     flex: 1,
-    fontSize: 13,
+    fontSize: isTablet ? 14 : 13,
     color: "#2C5282",
-    lineHeight: 18,
+    lineHeight: isTablet ? 20 : 18,
   },
 
   // Empty State
@@ -609,66 +561,66 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
-    paddingHorizontal: 40,
+    paddingHorizontal: isTablet ? 60 : 40,
   },
   emptyIcon: {
-    fontSize: 64,
+    fontSize: isTablet ? 80 : 64,
     marginBottom: 16,
   },
   emptyTitle: {
-    fontSize: 20,
+    fontSize: isTablet ? 24 : 20,
     fontWeight: "700",
     color: "#2D3748",
     marginBottom: 8,
   },
   emptyText: {
-    fontSize: 15,
+    fontSize: isTablet ? 16 : 15,
     color: "#718096",
     textAlign: "center",
-    lineHeight: 22,
+    lineHeight: isTablet ? 24 : 22,
     marginBottom: 24,
   },
   
-// Danger Zone Card
-dangerCard: {
-  backgroundColor: '#FFF5F5',
-  borderRadius: 12,
-  padding: 20,
-  marginHorizontal: 20,
-  marginBottom: 20,
-  borderWidth: 1,
-  borderColor: '#FED7D7',
-},
-dangerCardTitle: {
-  fontSize: 18,
-  fontWeight: '700',
-  color: '#C53030',
-  marginBottom: 8,
-},
-dangerCardDescription: {
-  fontSize: 14,
-  lineHeight: 20,
-  color: '#742A2A',
-  marginBottom: 16,
-},
+  // Danger Zone Card
+  dangerCard: {
+    backgroundColor: '#FFF5F5',
+    borderRadius: isTablet ? 16 : 12,
+    padding: isTablet ? 28 : 20,
+    marginHorizontal: isTablet ? 32 : 20,
+    marginBottom: 20,
+    borderWidth: 1,
+    borderColor: '#FED7D7',
+  },
+  dangerCardTitle: {
+    fontSize: isTablet ? 22 : 18,
+    fontWeight: '700',
+    color: '#C53030',
+    marginBottom: 8,
+  },
+  dangerCardDescription: {
+    fontSize: isTablet ? 16 : 14,
+    lineHeight: isTablet ? 22 : 20,
+    color: '#742A2A',
+    marginBottom: 16,
+  },
 
-// Danger Button
-dangerButton: {
-  flexDirection: 'row',
-  alignItems: 'center',
-  justifyContent: 'center',
-  backgroundColor: '#E53E3E',
-  paddingVertical: 14,
-  paddingHorizontal: 20,
-  borderRadius: 8,
-  gap: 8,
-},
-dangerButtonIcon: {
-  fontSize: 16,
-},
-dangerButtonText: {
-  color: '#FFFFFF',
-  fontSize: 16,
-  fontWeight: '600',
-},
+  // Danger Button
+  dangerButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#E53E3E',
+    paddingVertical: isTablet ? 16 : 14,
+    paddingHorizontal: isTablet ? 24 : 20,
+    borderRadius: isTablet ? 10 : 8,
+    gap: isTablet ? 10 : 8,
+  },
+  dangerButtonIcon: {
+    fontSize: isTablet ? 18 : 16,
+  },
+  dangerButtonText: {
+    color: '#FFFFFF',
+    fontSize: isTablet ? 17 : 16,
+    fontWeight: '600',
+  },
 });

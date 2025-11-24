@@ -32,7 +32,7 @@ export const AuthProvider = ({ children }) => {
           .from('profiles')
           .select('*')
           .eq('id', authUser.id)
-          .single();
+          .maybeSingle();
 
         if (!isMounted) return;
 
@@ -51,7 +51,8 @@ export const AuthProvider = ({ children }) => {
 
     const init = async () => {
       try {
-        const { data, error } = await supabase.auth.getUser();
+        // Use getSession instead of getUser for better session handling
+        const { data: { session }, error } = await supabase.auth.getSession();
         if (!isMounted) return;
 
         if (error) {
@@ -59,7 +60,7 @@ export const AuthProvider = ({ children }) => {
           setUser(null);
           setProfile(null);
         } else {
-          const authUser = data?.user ?? null;
+          const authUser = session?.user ?? null;
           await syncUserAndProfile(authUser);
         }
       } catch (e) {
@@ -77,10 +78,32 @@ export const AuthProvider = ({ children }) => {
     // Listen for login / logout / token refresh
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
+    } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log('Auth event:', event); // Helpful for debugging
+      
+      // Handle different auth events
+      if (event === 'SIGNED_OUT' || event === 'USER_DELETED') {
+        console.log('User signed out or deleted');
+        if (isMounted) {
+          setUser(null);
+          setProfile(null);
+        }
+        return;
+      }
+
+      if (event === 'TOKEN_REFRESHED') {
+        console.log('Token refreshed successfully');
+      }
+
+      if (event === 'SIGNED_IN') {
+        console.log('User signed in');
+      }
+
+      // Sync user and profile for all events
       const authUser = session?.user ?? null;
-      // fire and forget; syncUserAndProfile handles errors
-      syncUserAndProfile(authUser);
+      if (isMounted) {
+        await syncUserAndProfile(authUser);
+      }
     });
 
     return () => {
@@ -89,14 +112,27 @@ export const AuthProvider = ({ children }) => {
     };
   }, []);
 
-  const signOut = async () => {
-    try {
-      await supabase.auth.signOut();
-      // onAuthStateChange will clear user & profile
-    } catch (e) {
-      console.log('Error on signOut:', e);
+const signOut = async () => {
+  try {
+    // Sign out from Supabase
+    const { error } = await supabase.auth.signOut();
+    
+    if (error) {
+      console.error('Sign out error:', error);
+      throw error;
     }
-  };
+    
+    // Clear local state
+    setUser(null);
+    setProfile(null);
+    
+    console.log('User signed out successfully');
+  } catch (error) {
+    console.error('Unexpected sign out error:', error);
+    setUser(null);
+    setProfile(null);
+  }
+};
 
   const value = {
     user,       // auth user

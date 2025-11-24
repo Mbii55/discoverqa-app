@@ -15,47 +15,14 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useNavigation } from "@react-navigation/native";
 import { useAuth } from "../context/AuthContext";
 import { getQatarEvents } from "../api/predicthq";
-import { getPopularPlaces } from "../api/serperPlaces";
-import { getPlaceImages } from "../api/serperImages";
+import { getPopularPlaces } from "../api/serpapiPlaces";
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get("window");
 const isAndroid = Platform.OS === "android";
+const isTablet = screenWidth >= 600;
 
 // Component to handle individual place card with image loading
 function PlaceCardItem({ place, onPress }) {
-  const [thumbnail, setThumbnail] = useState(null);
-  const [loadingImage, setLoadingImage] = useState(true);
-
-  useEffect(() => {
-    let mounted = true;
-
-    async function loadThumbnail() {
-      if (!place.title) {
-        setLoadingImage(false);
-        return;
-      }
-
-      try {
-        const images = await getPlaceImages(place.title);
-        if (mounted && images.length > 0) {
-          setThumbnail(images[0]);
-        }
-      } catch (err) {
-        console.log("Error loading thumbnail:", err);
-      } finally {
-        if (mounted) {
-          setLoadingImage(false);
-        }
-      }
-    }
-
-    loadThumbnail();
-
-    return () => {
-      mounted = false;
-    };
-  }, [place.title]);
-
   return (
     <TouchableOpacity
       style={styles.placeCard}
@@ -63,14 +30,10 @@ function PlaceCardItem({ place, onPress }) {
       onPress={onPress}
     >
       <View style={styles.placeImageContainer}>
-        {loadingImage ? (
-          <View style={styles.placeholderImage}>
-            <ActivityIndicator size="small" color="#4A5568" />
-          </View>
-        ) : thumbnail ? (
+        {place.thumbnail ? (
           <>
             <Image
-              source={{ uri: thumbnail }}
+              source={{ uri: place.thumbnail }}
               style={styles.placeImage}
               resizeMode="cover"
             />
@@ -162,11 +125,12 @@ const HomeScreen = () => {
     navigation.navigate("PlaceDetail", { place });
   };
 
-  const firstName =
-    profile?.full_name ||
-    user?.user_metadata?.full_name ||
-    user?.email ||
-    "there";
+  const isLoggedIn = !!user;
+  const firstName = profile?.full_name || user?.user_metadata?.full_name || user?.email;
+  const displayName = firstName ? firstName.split(" ")[0] : null;
+
+  const greeting = isLoggedIn ? "Welcome back" : "Welcome to";
+  const nameOrApp = displayName || "DiscoverQA";
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
@@ -178,8 +142,8 @@ const HomeScreen = () => {
         <View style={styles.heroSection}>
           <View style={styles.heroBackground} />
           <View style={styles.heroContent}>
-            <Text style={styles.greeting}>Welcome back</Text>
-            <Text style={styles.userName}>{firstName.split(" ")[0]}</Text>
+            <Text style={styles.greeting}>{greeting}</Text>
+            <Text style={styles.userName}>{nameOrApp}</Text>
             <Text style={styles.heroSubtitle}>
               Explore the best of Qatar
             </Text>
@@ -326,13 +290,23 @@ const HomeScreen = () => {
               showsHorizontalScrollIndicator={false}
               contentContainerStyle={styles.horizontalScroll}
             >
-              {places.map((place, index) => (
+            {places.map((place, index) => {
+              // SerpAPI uses different ID fields
+              const stableId =
+                place.place_id ||
+                place.data_id ||
+                place.cid ||
+                place.data_cid;
+
+              return (
                 <PlaceCardItem
-                  key={place.placeId || place.place_id || place.cid || place.data_id || `place-${index}`}
+                  key={stableId ? `home-place-${stableId}` : `home-place-${index}`}
                   place={place}
                   onPress={() => handleOpenPlace(place)}
                 />
-              ))}
+              );
+            })}
+
             </ScrollView>
           )}
         </View>
@@ -377,11 +351,14 @@ const styles = StyleSheet.create({
   },
   content: {
     paddingBottom: 40,
+    maxWidth: isTablet ? 1200 : '100%',
+    width: '100%',
+    alignSelf: 'center', 
   },
 
   // Hero Section
   heroSection: {
-    height: isAndroid ? screenHeight * 0.25 : screenHeight * 0.17,
+    height: isTablet ? 220 : (isAndroid ? screenHeight * 0.25 : screenHeight * 0.17),
     marginBottom: 24,
     overflow: "hidden",
   },
@@ -409,7 +386,7 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
   },
   userName: {
-    fontSize: isAndroid ? 30 : 36,
+    fontSize: isTablet ? 42 : (isAndroid ? 30 : 36),
     fontWeight: "700",
     color: "#FFFFFF",
     marginBottom: 6,
@@ -424,8 +401,11 @@ const styles = StyleSheet.create({
   // Quick Navigation
   navContainer: {
     flexDirection: "row",
-    paddingHorizontal: 20,
-    gap: 12,
+    paddingHorizontal: isTablet ? 40 : 20,
+    gap: isTablet ? 20 : 12,
+    maxWidth: isTablet ? 800 : '100%',
+    alignSelf: 'center',
+    width: '100%',
     marginBottom: 24,
     marginTop: -16,
   },
@@ -455,22 +435,25 @@ const styles = StyleSheet.create({
   insightsCard: {
     flexDirection: "row",
     backgroundColor: "#FFFFFF",
-    marginHorizontal: 20,
+    marginHorizontal: isTablet ? 40 : 20,
     borderRadius: isAndroid ? 14 : 16,
-    padding: isAndroid ? 16 : 20,
+    padding: isTablet ? 32 : (isAndroid ? 16 : 20),
     marginBottom: isAndroid ? 28 : 32,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.06,
     shadowRadius: 8,
     elevation: 2,
+    maxWidth: isTablet ? 800 : '100%',
+    alignSelf: 'center',
+    width: isTablet ? '90%' : 'auto',
   },
   insightItem: {
     flex: 1,
     alignItems: "center",
   },
   insightNumber: {
-    fontSize: isAndroid ? 28 : 32,
+    fontSize: isTablet ? 40 : (isAndroid ? 28 : 32),
     fontWeight: "700",
     color: "#2D3748",
     marginBottom: 4,
@@ -495,11 +478,11 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    paddingHorizontal: 20,
+    paddingHorizontal: isTablet ? 40 : 20,
     marginBottom: isAndroid ? 14 : 16,
   },
   sectionTitle: {
-    fontSize: isAndroid ? 20 : 22,
+    fontSize: isTablet ? 26 : (isAndroid ? 20 : 22),
     fontWeight: "700",
     color: "#2D3748",
     marginBottom: 2,
@@ -523,7 +506,7 @@ const styles = StyleSheet.create({
 
   // Horizontal Scroll
   horizontalScroll: {
-    paddingLeft: 20,
+    paddingLeft: isTablet ? 40 : 20,
     paddingRight: 8,
   },
 
@@ -552,7 +535,7 @@ const styles = StyleSheet.create({
 
   // Event Card
   eventCard: {
-    width: screenWidth * 0.75,
+    width: isTablet ? 400 : screenWidth * 0.75,
     backgroundColor: "#FFFFFF",
     borderRadius: isAndroid ? 18 : 20,
     marginRight: isAndroid ? 12 : 14,
@@ -645,7 +628,7 @@ const styles = StyleSheet.create({
 
   // Place Card
   placeCard: {
-    width: screenWidth * 0.68,
+    width: isTablet ? 350 : screenWidth * 0.68,
     backgroundColor: "#FFFFFF",
     borderRadius: isAndroid ? 18 : 20,
     marginRight: 12,
@@ -721,12 +704,15 @@ const styles = StyleSheet.create({
   tipCard: {
     flexDirection: "row",
     backgroundColor: "#FFFFFF",
-    marginHorizontal: 20,
+    marginHorizontal: isTablet ? 40 : 20,
     borderRadius: isAndroid ? 14 : 16,
-    padding: isAndroid ? 14 : 16,
+    padding: isTablet ? 24 : (isAndroid ? 14 : 16),
     alignItems: "center",
     borderWidth: 1,
     borderColor: "#E2E8F0",
+    maxWidth: isTablet ? 800 : '100%',
+    alignSelf: 'center',
+    width: isTablet ? '90%' : 'auto',
   },
   tipIcon: {
     width: isAndroid ? 44 : 48,
